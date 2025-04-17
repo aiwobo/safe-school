@@ -9,15 +9,15 @@ let map = null;
 // 设备图层
 let devicesLayer = null;
 
-// 模拟设备数据，根据提供的校园地图布局更新
+// 模拟设备数据，根据提供的校园地图布局
 const devices = [
     {
         id: 'CAM001',
         type: 'camera',
-        name: '图书馆北侧摄像头',
-        location: '图书馆北侧',
+        name: '图书馆摄像头',
+        location: '图书馆',
         status: 'online',
-        coords: [30.5425, 114.3658], // 图书馆位置
+        coords: [51.505, -0.09], // 临时坐标，将在地图初始化时调整
         battery: 90,
         lastHeartbeat: new Date().toISOString(),
         alerts: []
@@ -25,22 +25,11 @@ const devices = [
     {
         id: 'CAM002',
         type: 'camera',
-        name: '行政楼监控',
-        location: '行政楼入口',
+        name: '教学楼摄像头',
+        location: '教学楼',
         status: 'online',
-        coords: [30.5422, 114.3660], // 行政楼位置
+        coords: [51.505, -0.09], // 临时坐标，将在地图初始化时调整
         battery: 85,
-        lastHeartbeat: new Date().toISOString(),
-        alerts: []
-    },
-    {
-        id: 'CAM003',
-        type: 'camera',
-        name: '教学楼南侧摄像头',
-        location: '教学楼南侧',
-        status: 'online',
-        coords: [30.5428, 114.3662], // 教学楼位置
-        battery: 92,
         lastHeartbeat: new Date().toISOString(),
         alerts: []
     },
@@ -50,7 +39,7 @@ const devices = [
         name: '1号学生公寓环境传感器',
         location: '1号学生公寓',
         status: 'online',
-        coords: [30.5418, 114.3652], // 1号学生公寓位置
+        coords: [51.505, -0.09], // 临时坐标，将在地图初始化时调整
         battery: 72,
         lastHeartbeat: new Date().toISOString(),
         alerts: [],
@@ -67,7 +56,7 @@ const devices = [
         name: '13号学生公寓环境传感器',
         location: '13号学生公寓',
         status: 'offline',
-        coords: [30.5430, 114.3645], // 13号学生公寓位置
+        coords: [51.505, -0.09], // 临时坐标，将在地图初始化时调整
         battery: 15,
         lastHeartbeat: new Date(Date.now() - 86400000).toISOString(), // 1天前
         alerts: [{
@@ -86,9 +75,9 @@ const devices = [
         id: 'DOOR001',
         type: 'door',
         name: '综合楼门禁',
-        location: '综合楼主入口',
+        location: '综合楼',
         status: 'alert',
-        coords: [30.5423, 114.3656], // 综合楼位置
+        coords: [51.505, -0.09], // 临时坐标，将在地图初始化时调整
         battery: 60,
         lastHeartbeat: new Date().toISOString(),
         alerts: [{
@@ -101,77 +90,85 @@ const devices = [
         id: 'DOOR002',
         type: 'door',
         name: '田径场门禁',
-        location: '田径场入口',
+        location: '田径场',
         status: 'online',
-        coords: [30.5428, 114.3665], // 田径场位置
+        coords: [51.505, -0.09], // 临时坐标，将在地图初始化时调整
         battery: 88,
         lastHeartbeat: new Date().toISOString(),
         alerts: []
-    },
-    {
-        id: 'DOOR003',
-        type: 'door',
-        name: '创新创业实训基地门禁',
-        location: '创新创业实训基地',
-        status: 'online',
-        coords: [30.5432, 114.3670], // 创新创业实训基地位置
-        battery: 95,
-        lastHeartbeat: new Date().toISOString(),
-        alerts: []
-    },
-    {
-        id: 'SENS003',
-        type: 'sensor',
-        name: '9号学生公寓环境传感器',
-        location: '9号学生公寓',
-        status: 'online',
-        coords: [30.5435, 114.3650], // 9号学生公寓位置
-        battery: 83,
-        lastHeartbeat: new Date().toISOString(),
-        alerts: [],
-        data: {
-            temperature: 26.2,
-            humidity: 48,
-            pm25: 22,
-            noise: 38
-        }
-    },
-    {
-        id: 'SENS004',
-        type: 'sensor',
-        name: '综合文体馆环境传感器',
-        location: '综合文体馆',
-        status: 'online',
-        coords: [30.5430, 114.3670], // 综合文体馆位置
-        battery: 67,
-        lastHeartbeat: new Date().toISOString(),
-        alerts: [],
-        data: {
-            temperature: 23.8,
-            humidity: 60,
-            pm25: 18,
-            noise: 52
-        }
     }
 ];
+
+// 校园楼宇坐标映射表（相对坐标，将根据图片尺寸进行转换）
+const buildingCoords = {
+    '图书馆': [0.5, 0.6],  // x, y (相对于图片的比例位置)
+    '教学楼': [0.7, 0.7],
+    '实验楼': [0.3, 0.7],
+    '行政楼': [0.8, 0.7],
+    '田径场': [0.7, 0.3],
+    '综合体育馆': [0.6, 0.4],
+    '创新创业实训基地': [0.8, 0.5],
+    '1号学生公寓': [0.2, 0.4],
+    '2号学生公寓': [0.3, 0.4],
+    '3号学生公寓': [0.1, 0.35],
+    '4号学生公寓': [0.1, 0.4],
+    '5号学生公寓': [0.1, 0.45],
+    '6号学生公寓': [0.4, 0.3],
+    '7号学生公寓': [0.4, 0.25],
+    '8号学生公寓': [0.45, 0.1],
+    '9号学生公寓': [0.45, 0.15],
+    '10号学生公寓': [0.25, 0.15],
+    '11号学生公寓': [0.25, 0.1],
+    '12号学生公寓': [0.25, 0.05],
+    '13号学生公寓': [0.25, 0],
+    '14号学生公寓': [0.75, 0.1],
+    '15号学生公寓': [0.75, 0.15],
+    '16号学生公寓': [0.75, 0.2]
+};
 
 /**
  * 初始化地图
  */
 function initMap() {
-    // 创建地图实例，设置中心点和缩放级别 - 基于提供的校园地图调整中心点
-    map = L.map('map-container').setView([30.5425, 114.3660], 17);
+    // 创建一个简单的坐标系统，使用像素坐标而不是地理坐标
+    // 创建地图实例，禁用默认的缩放控制，使用简单的CRS
+    map = L.map('map-container', {
+        crs: L.CRS.Simple,  // 使用简单的坐标系统
+        zoomControl: false, // 禁用默认缩放控制
+        attributionControl: false, // 禁用归属信息
+        minZoom: -2,        // 允许更多缩小
+        maxZoom: 2         // 限制最大缩放级别
+    });
     
-    // 加载OpenStreetMap瓦片图层
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    // 添加自定义缩放控制到右上角
+    L.control.zoom({
+        position: 'topright'
     }).addTo(map);
     
-    // 添加校园建筑物标记
-    addCampusBuildingMarkers();
+    // 获取地图容器的尺寸
+    const mapContainer = document.getElementById('map-container');
+    const containerWidth = mapContainer.clientWidth;
+    const containerHeight = mapContainer.clientHeight;
+    
+    // 假设图片宽高比为 4:3（这个值需要根据实际图片调整）
+    const imageWidth = 1000;
+    const imageHeight = 750;
+    
+    // 计算图片边界坐标
+    const bounds = [[0, 0], [imageHeight, imageWidth]];
+    
+    // 添加校园地图图片作为图层
+    const imageUrl = 'images/campus-map.jpg'; // 校园地图图片路径
+    const imageOverlay = L.imageOverlay(imageUrl, bounds).addTo(map);
+    
+    // 将视图设置为图片的中心
+    map.fitBounds(bounds);
     
     // 创建设备图层组
     devicesLayer = L.layerGroup().addTo(map);
+    
+    // 转换建筑物坐标并更新设备坐标
+    updateDeviceCoordinates(imageWidth, imageHeight);
     
     // 加载设备标记
     loadDeviceMarkers();
@@ -181,35 +178,58 @@ function initMap() {
 }
 
 /**
- * 添加校园建筑物标记
+ * 更新设备坐标，将相对坐标转换为图片上的实际坐标
+ * @param {number} width - 图片宽度
+ * @param {number} height - 图片高度
  */
-function addCampusBuildingMarkers() {
-    // 标记主要建筑物位置
-    const buildings = [
-        { name: '图书馆', coords: [30.5425, 114.3658], icon: 'book' },
-        { name: '教学楼', coords: [30.5428, 114.3662], icon: 'school' },
-        { name: '行政楼', coords: [30.5422, 114.3660], icon: 'building' },
-        { name: '综合楼', coords: [30.5423, 114.3656], icon: 'building' },
-        { name: '田径场', coords: [30.5428, 114.3665], icon: 'running' },
-        { name: '综合文体馆', coords: [30.5430, 114.3670], icon: 'dumbbell' },
-        { name: '创新创业实训基地', coords: [30.5432, 114.3670], icon: 'lightbulb' },
-        { name: '学生公寓区', coords: [30.5430, 114.3650], icon: 'bed' }
-    ];
-    
-    // 添加建筑物标记
-    buildings.forEach(building => {
-        // 创建建筑物图标
-        const buildingIcon = L.divIcon({
-            className: 'building-icon',
-            html: `<i class="fas fa-${building.icon}"></i>`,
-            iconSize: [30, 30]
-        });
-        
-        // 添加标记
-        L.marker(building.coords, { icon: buildingIcon })
-            .bindTooltip(building.name)
-            .addTo(map);
+function updateDeviceCoordinates(width, height) {
+    // 为每个设备分配对应建筑物的坐标
+    devices.forEach(device => {
+        const locationKey = getLocationKey(device.location);
+        if (buildingCoords[locationKey]) {
+            const [xRatio, yRatio] = buildingCoords[locationKey];
+            // 转换为图片上的坐标（Leaflet中y轴是从下到上的）
+            device.coords = [height * (1 - yRatio), width * xRatio];
+            
+            // 添加一点随机偏移，使同一建筑内的设备不重叠
+            device.coords[0] += (Math.random() - 0.5) * 20;
+            device.coords[1] += (Math.random() - 0.5) * 20;
+        }
     });
+}
+
+/**
+ * 根据设备位置描述获取对应的建筑物键名
+ * @param {string} location - 设备位置描述
+ * @returns {string} - 对应的建筑物键名
+ */
+function getLocationKey(location) {
+    // 处理位置描述与建筑物映射表的匹配
+    for (const key in buildingCoords) {
+        if (location.includes(key)) {
+            return key;
+        }
+    }
+    
+    // 如果没有精确匹配，尝试模糊匹配
+    if (location.includes('公寓')) {
+        return '1号学生公寓'; // 默认返回1号公寓
+    } else if (location.includes('教学')) {
+        return '教学楼';
+    } else if (location.includes('实验')) {
+        return '实验楼';
+    } else if (location.includes('图书馆')) {
+        return '图书馆';
+    } else if (location.includes('田径')) {
+        return '田径场';
+    } else if (location.includes('行政')) {
+        return '行政楼';
+    } else if (location.includes('创新') || location.includes('创业')) {
+        return '创新创业实训基地';
+    }
+    
+    // 默认返回图书馆位置
+    return '图书馆';
 }
 
 /**
@@ -259,143 +279,6 @@ function loadDeviceMarkers() {
         
         devicesLayer.addLayer(marker);
     });
-}
-
-/**
- * 显示设备详情模态框
- * @param {Object} device - 设备对象
- */
-function showDeviceDetails(device) {
-    // 设置模态框标题
-    document.getElementById('deviceModalTitle').textContent = device.name;
-    
-    // 格式化上次心跳时间
-    const lastHeartbeatDate = new Date(device.lastHeartbeat);
-    const timeAgo = getTimeAgo(lastHeartbeatDate);
-    
-    // 获取电池图标
-    const batteryIcon = getBatteryIcon(device.battery);
-    
-    // 设置模态框内容
-    let statusClass = '';
-    let statusText = '';
-    
-    switch(device.status) {
-        case 'online':
-            statusClass = 'status-online';
-            statusText = '在线';
-            break;
-        case 'offline':
-            statusClass = 'status-offline';
-            statusText = '离线';
-            break;
-        case 'alert':
-            statusClass = 'status-alert';
-            statusText = '报警中';
-            break;
-    }
-    
-    // 构建详情HTML
-    let detailsHtml = `
-        <div class="device-detail">
-            <strong>设备ID:</strong> ${device.id}
-        </div>
-        <div class="device-detail">
-            <strong>类型:</strong> ${getDeviceTypeName(device.type)}
-        </div>
-        <div class="device-detail">
-            <strong>位置:</strong> ${device.location}
-        </div>
-        <div class="device-detail">
-            <strong>状态:</strong> <span class="${statusClass}">${statusText}</span>
-        </div>
-        <div class="device-detail">
-            <strong>电量:</strong> ${batteryIcon} ${device.battery}%
-        </div>
-        <div class="device-detail">
-            <strong>最后心跳:</strong> ${timeAgo} (${lastHeartbeatDate.toLocaleString()})
-        </div>
-    `;
-    
-    // 如果有报警信息，添加到详情中
-    if (device.alerts && device.alerts.length > 0) {
-        detailsHtml += '<div class="device-detail"><strong>报警信息:</strong><ul>';
-        device.alerts.forEach(alert => {
-            const alertTime = new Date(alert.time).toLocaleString();
-            detailsHtml += `<li>${alert.message} (${alertTime})</li>`;
-        });
-        detailsHtml += '</ul></div>';
-    }
-    
-    // 如果是环境传感器，显示环境数据
-    if (device.type === 'sensor' && device.data) {
-        detailsHtml += '<div class="device-detail"><strong>环境数据:</strong>';
-        if (device.status === 'online') {
-            detailsHtml += `
-                <ul>
-                    <li>温度: ${device.data.temperature}°C</li>
-                    <li>湿度: ${device.data.humidity}%</li>
-                    <li>PM2.5: ${device.data.pm25} μg/m³</li>
-                    <li>噪音: ${device.data.noise} dB</li>
-                </ul>
-            `;
-        } else {
-            detailsHtml += '<p>设备离线，无法获取数据</p>';
-        }
-        detailsHtml += '</div>';
-    }
-    
-    // 更新模态框内容
-    document.getElementById('deviceModalBody').innerHTML = detailsHtml;
-    
-    // 处理静音报警按钮状态
-    const muteBtn = document.getElementById('muteAlarm');
-    if (device.status === 'alert' && checkPermission('mute_alarm')) {
-        muteBtn.style.display = 'block';
-        muteBtn.onclick = () => muteDeviceAlarm(device.id);
-    } else {
-        muteBtn.style.display = 'none';
-    }
-    
-    // 显示模态框
-    const deviceModal = new bootstrap.Modal(document.getElementById('deviceModal'));
-    deviceModal.show();
-    
-    // 记录用户查看设备详情的操作
-    logUserAction('view_device_detail', { deviceId: device.id });
-}
-
-/**
- * 静音设备报警
- * @param {string} deviceId - 设备ID
- */
-function muteDeviceAlarm(deviceId) {
-    // 检查权限
-    if (!checkPermission('mute_alarm')) {
-        alert('您没有权限执行此操作');
-        return;
-    }
-    
-    // 查找设备
-    const device = devices.find(d => d.id === deviceId);
-    if (!device) return;
-    
-    // 修改设备状态
-    device.status = 'online';
-    device.alerts = [];
-    
-    // 关闭模态框
-    const deviceModal = bootstrap.Modal.getInstance(document.getElementById('deviceModal'));
-    deviceModal.hide();
-    
-    // 更新地图标记
-    loadDeviceMarkers();
-    
-    // 显示操作成功提示
-    showNotification('成功', `已静音设备 ${device.name} 的报警`, 'success');
-    
-    // 记录操作日志
-    logUserAction('mute_alarm', { deviceId: deviceId });
 }
 
 /**
@@ -542,6 +425,143 @@ function updateDeviceStatus() {
     
     // 更新地图标记
     loadDeviceMarkers();
+}
+
+/**
+ * 显示设备详情模态框
+ * @param {Object} device - 设备对象
+ */
+function showDeviceDetails(device) {
+    // 设置模态框标题
+    document.getElementById('deviceModalTitle').textContent = device.name;
+    
+    // 格式化上次心跳时间
+    const lastHeartbeatDate = new Date(device.lastHeartbeat);
+    const timeAgo = getTimeAgo(lastHeartbeatDate);
+    
+    // 获取电池图标
+    const batteryIcon = getBatteryIcon(device.battery);
+    
+    // 设置模态框内容
+    let statusClass = '';
+    let statusText = '';
+    
+    switch(device.status) {
+        case 'online':
+            statusClass = 'status-online';
+            statusText = '在线';
+            break;
+        case 'offline':
+            statusClass = 'status-offline';
+            statusText = '离线';
+            break;
+        case 'alert':
+            statusClass = 'status-alert';
+            statusText = '报警中';
+            break;
+    }
+    
+    // 构建详情HTML
+    let detailsHtml = `
+        <div class="device-detail">
+            <strong>设备ID:</strong> ${device.id}
+        </div>
+        <div class="device-detail">
+            <strong>类型:</strong> ${getDeviceTypeName(device.type)}
+        </div>
+        <div class="device-detail">
+            <strong>位置:</strong> ${device.location}
+        </div>
+        <div class="device-detail">
+            <strong>状态:</strong> <span class="${statusClass}">${statusText}</span>
+        </div>
+        <div class="device-detail">
+            <strong>电量:</strong> ${batteryIcon} ${device.battery}%
+        </div>
+        <div class="device-detail">
+            <strong>最后心跳:</strong> ${timeAgo} (${lastHeartbeatDate.toLocaleString()})
+        </div>
+    `;
+    
+    // 如果有报警信息，添加到详情中
+    if (device.alerts && device.alerts.length > 0) {
+        detailsHtml += '<div class="device-detail"><strong>报警信息:</strong><ul>';
+        device.alerts.forEach(alert => {
+            const alertTime = new Date(alert.time).toLocaleString();
+            detailsHtml += `<li>${alert.message} (${alertTime})</li>`;
+        });
+        detailsHtml += '</ul></div>';
+    }
+    
+    // 如果是环境传感器，显示环境数据
+    if (device.type === 'sensor' && device.data) {
+        detailsHtml += '<div class="device-detail"><strong>环境数据:</strong>';
+        if (device.status === 'online') {
+            detailsHtml += `
+                <ul>
+                    <li>温度: ${device.data.temperature}°C</li>
+                    <li>湿度: ${device.data.humidity}%</li>
+                    <li>PM2.5: ${device.data.pm25} μg/m³</li>
+                    <li>噪音: ${device.data.noise} dB</li>
+                </ul>
+            `;
+        } else {
+            detailsHtml += '<p>设备离线，无法获取数据</p>';
+        }
+        detailsHtml += '</div>';
+    }
+    
+    // 更新模态框内容
+    document.getElementById('deviceModalBody').innerHTML = detailsHtml;
+    
+    // 处理静音报警按钮状态
+    const muteBtn = document.getElementById('muteAlarm');
+    if (device.status === 'alert' && checkPermission('mute_alarm')) {
+        muteBtn.style.display = 'block';
+        muteBtn.onclick = () => muteDeviceAlarm(device.id);
+    } else {
+        muteBtn.style.display = 'none';
+    }
+    
+    // 显示模态框
+    const deviceModal = new bootstrap.Modal(document.getElementById('deviceModal'));
+    deviceModal.show();
+    
+    // 记录用户查看设备详情的操作
+    logUserAction('view_device_detail', { deviceId: device.id });
+}
+
+/**
+ * 静音设备报警
+ * @param {string} deviceId - 设备ID
+ */
+function muteDeviceAlarm(deviceId) {
+    // 检查权限
+    if (!checkPermission('mute_alarm')) {
+        alert('您没有权限执行此操作');
+        return;
+    }
+    
+    // 查找设备
+    const device = devices.find(d => d.id === deviceId);
+    if (!device) return;
+    
+    // 修改设备状态
+    device.status = 'online';
+    device.alerts = [];
+    
+    // 关闭模态框
+    const deviceModal = bootstrap.Modal.getInstance(document.getElementById('deviceModal'));
+    deviceModal.hide();
+    
+    // 更新地图标记
+    loadDeviceMarkers();
+    
+    // 显示操作成功提示
+    showNotification('成功', `已静音设备 ${device.name} 的报警`, 'success');
+    
+    // 记录操作日志
+    logUserAction('mute_alarm', { deviceId: deviceId });
 }
 
 /**
