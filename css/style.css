@@ -38,6 +38,19 @@ body {
     animation: pulse 1.5s infinite;
 }
 
+/* 校园建筑物图标样式 */
+.building-icon {
+    background-color: #6c757d;
+    color: white;
+    border-radius: 5px;
+    text-align: center;
+    line-height: 30px;
+    font-size: 16px;
+    opacity: 0.8;
+    border: 2px solid #fff;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
 /* 脉冲动画 */
 @keyframes pulse {
     0% {

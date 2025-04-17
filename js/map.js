@@ -9,15 +9,15 @@ let map = null;
 // 设备图层
 let devicesLayer = null;
 
-// 模拟设备数据
+// 模拟设备数据，根据提供的校园地图布局更新
 const devices = [
     {
         id: 'CAM001',
         type: 'camera',
-        name: '主楼前摄像头',
-        location: '主教学楼前',
+        name: '图书馆北侧摄像头',
+        location: '图书馆北侧',
         status: 'online',
-        coords: [30.5425, 114.3657], // 这应该是校园内某处的经纬度
+        coords: [30.5425, 114.3658], // 图书馆位置
         battery: 90,
         lastHeartbeat: new Date().toISOString(),
         alerts: []
@@ -25,21 +25,32 @@ const devices = [
     {
         id: 'CAM002',
         type: 'camera',
-        name: '图书馆入口摄像头',
-        location: '图书馆入口',
+        name: '行政楼监控',
+        location: '行政楼入口',
         status: 'online',
-        coords: [30.5430, 114.3659],
+        coords: [30.5422, 114.3660], // 行政楼位置
         battery: 85,
+        lastHeartbeat: new Date().toISOString(),
+        alerts: []
+    },
+    {
+        id: 'CAM003',
+        type: 'camera',
+        name: '教学楼南侧摄像头',
+        location: '教学楼南侧',
+        status: 'online',
+        coords: [30.5428, 114.3662], // 教学楼位置
+        battery: 92,
         lastHeartbeat: new Date().toISOString(),
         alerts: []
     },
     {
         id: 'SENS001',
         type: 'sensor',
-        name: '主楼环境传感器',
-        location: '主楼一层大厅',
+        name: '1号学生公寓环境传感器',
+        location: '1号学生公寓',
         status: 'online',
-        coords: [30.5426, 114.3655],
+        coords: [30.5418, 114.3652], // 1号学生公寓位置
         battery: 72,
         lastHeartbeat: new Date().toISOString(),
         alerts: [],
@@ -53,10 +64,10 @@ const devices = [
     {
         id: 'SENS002',
         type: 'sensor',
-        name: '图书馆环境传感器',
-        location: '图书馆二层',
+        name: '13号学生公寓环境传感器',
+        location: '13号学生公寓',
         status: 'offline',
-        coords: [30.5431, 114.3658],
+        coords: [30.5430, 114.3645], // 13号学生公寓位置
         battery: 15,
         lastHeartbeat: new Date(Date.now() - 86400000).toISOString(), // 1天前
         alerts: [{
@@ -74,10 +85,10 @@ const devices = [
     {
         id: 'DOOR001',
         type: 'door',
-        name: '主楼大门门禁',
-        location: '主楼正门',
+        name: '综合楼门禁',
+        location: '综合楼主入口',
         status: 'alert',
-        coords: [30.5425, 114.3653],
+        coords: [30.5423, 114.3656], // 综合楼位置
         battery: 60,
         lastHeartbeat: new Date().toISOString(),
         alerts: [{
@@ -89,13 +100,58 @@ const devices = [
     {
         id: 'DOOR002',
         type: 'door',
-        name: '实验室门禁',
-        location: '实验楼二层',
+        name: '田径场门禁',
+        location: '田径场入口',
         status: 'online',
-        coords: [30.5423, 114.3662],
+        coords: [30.5428, 114.3665], // 田径场位置
         battery: 88,
         lastHeartbeat: new Date().toISOString(),
         alerts: []
+    },
+    {
+        id: 'DOOR003',
+        type: 'door',
+        name: '创新创业实训基地门禁',
+        location: '创新创业实训基地',
+        status: 'online',
+        coords: [30.5432, 114.3670], // 创新创业实训基地位置
+        battery: 95,
+        lastHeartbeat: new Date().toISOString(),
+        alerts: []
+    },
+    {
+        id: 'SENS003',
+        type: 'sensor',
+        name: '9号学生公寓环境传感器',
+        location: '9号学生公寓',
+        status: 'online',
+        coords: [30.5435, 114.3650], // 9号学生公寓位置
+        battery: 83,
+        lastHeartbeat: new Date().toISOString(),
+        alerts: [],
+        data: {
+            temperature: 26.2,
+            humidity: 48,
+            pm25: 22,
+            noise: 38
+        }
+    },
+    {
+        id: 'SENS004',
+        type: 'sensor',
+        name: '综合文体馆环境传感器',
+        location: '综合文体馆',
+        status: 'online',
+        coords: [30.5430, 114.3670], // 综合文体馆位置
+        battery: 67,
+        lastHeartbeat: new Date().toISOString(),
+        alerts: [],
+        data: {
+            temperature: 23.8,
+            humidity: 60,
+            pm25: 18,
+            noise: 52
+        }
     }
 ];
 
@@ -103,13 +159,16 @@ const devices = [
  * 初始化地图
  */
 function initMap() {
-    // 创建地图实例，设置中心点和缩放级别
-    map = L.map('map-container').setView([30.5425, 114.3657], 17);
+    // 创建地图实例，设置中心点和缩放级别 - 基于提供的校园地图调整中心点
+    map = L.map('map-container').setView([30.5425, 114.3660], 17);
     
     // 加载OpenStreetMap瓦片图层
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
+    
+    // 添加校园建筑物标记
+    addCampusBuildingMarkers();
     
     // 创建设备图层组
     devicesLayer = L.layerGroup().addTo(map);
@@ -119,6 +178,38 @@ function initMap() {
     
     // 每30秒更新一次设备状态（模拟实时更新）
     setInterval(updateDeviceStatus, 30000);
+}
+
+/**
+ * 添加校园建筑物标记
+ */
+function addCampusBuildingMarkers() {
+    // 标记主要建筑物位置
+    const buildings = [
+        { name: '图书馆', coords: [30.5425, 114.3658], icon: 'book' },
+        { name: '教学楼', coords: [30.5428, 114.3662], icon: 'school' },
+        { name: '行政楼', coords: [30.5422, 114.3660], icon: 'building' },
+        { name: '综合楼', coords: [30.5423, 114.3656], icon: 'building' },
+        { name: '田径场', coords: [30.5428, 114.3665], icon: 'running' },
+        { name: '综合文体馆', coords: [30.5430, 114.3670], icon: 'dumbbell' },
+        { name: '创新创业实训基地', coords: [30.5432, 114.3670], icon: 'lightbulb' },
+        { name: '学生公寓区', coords: [30.5430, 114.3650], icon: 'bed' }
+    ];
+    
+    // 添加建筑物标记
+    buildings.forEach(building => {
+        // 创建建筑物图标
+        const buildingIcon = L.divIcon({
+            className: 'building-icon',
+            html: `<i class="fas fa-${building.icon}"></i>`,
+            iconSize: [30, 30]
+        });
+        
+        // 添加标记
+        L.marker(building.coords, { icon: buildingIcon })
+            .bindTooltip(building.name)
+            .addTo(map);
+    });
 }
 
 /**
@@ -321,32 +412,90 @@ function updateDeviceStatus() {
     // 更新最后心跳时间
     device.lastHeartbeat = new Date().toISOString();
     
-    // 随机模拟状态变化（低概率）
-    if (Math.random() < 0.2) {
-        // 如果当前不是报警状态，有小概率变为报警
-        if (device.status !== 'alert' && Math.random() < 0.3) {
+    // 根据不同场景模拟事件
+    const currentHour = new Date().getHours();
+    let eventProbability = 0.1; // 基础事件概率
+    
+    // 早晚高峰时段（7-9点和17-19点）提高事件概率
+    if ((currentHour >= 7 && currentHour <= 9) || (currentHour >= 17 && currentHour <= 19)) {
+        eventProbability = 0.3;
+    }
+    
+    // 深夜时段（23-6点）在学生公寓提高事件概率
+    if (currentHour >= 23 || currentHour <= 6) {
+        if (device.location.includes('公寓')) {
+            eventProbability = 0.25;
+        } else {
+            eventProbability = 0.05; // 其他区域降低事件概率
+        }
+    }
+    
+    // 随机模拟状态变化
+    if (Math.random() < eventProbability) {
+        // 如果当前不是报警状态，有概率变为报警
+        if (device.status !== 'alert' && Math.random() < 0.4) {
             device.status = 'alert';
             
-            // 根据设备类型生成不同的报警
+            // 根据设备类型和位置生成不同的报警
             let alertType, alertMessage;
             
             switch(device.type) {
                 case 'camera':
-                    alertType = 'intrusion';
-                    alertMessage = '检测到可疑人员';
+                    // 摄像头报警类型
+                    if (device.location.includes('公寓')) {
+                        // 学生公寓摄像头
+                        if (currentHour >= 23 || currentHour <= 6) {
+                            alertType = 'motion';
+                            alertMessage = '检测到异常活动';
+                        } else {
+                            alertType = 'crowd';
+                            alertMessage = '人员密度过高';
+                        }
+                    } else if (device.location.includes('田径场')) {
+                        // 田径场摄像头
+                        alertType = 'intrusion';
+                        alertMessage = '非开放时间有人进入';
+                    } else {
+                        // 其他区域摄像头
+                        alertType = 'intrusion';
+                        alertMessage = '检测到可疑人员';
+                    }
                     break;
+                    
                 case 'sensor':
-                    if (Math.random() < 0.5) {
+                    // 环境传感器报警
+                    const randomSensorEvent = Math.random();
+                    if (randomSensorEvent < 0.3) {
                         alertType = 'temperature';
                         alertMessage = '温度异常';
+                    } else if (randomSensorEvent < 0.6) {
+                        alertType = 'humidity';
+                        alertMessage = '湿度异常';
+                    } else if (randomSensorEvent < 0.9) {
+                        alertType = 'air';
+                        alertMessage = 'PM2.5浓度超标';
                     } else {
                         alertType = 'fire';
                         alertMessage = '可能发生火灾';
                     }
                     break;
+                    
                 case 'door':
-                    alertType = 'intrusion';
-                    alertMessage = '非授权人员尝试进入';
+                    // 门禁控制器报警
+                    if (device.location.includes('图书馆') || device.location.includes('创新创业')) {
+                        // 图书馆或创新创业基地
+                        if (currentHour >= 22 || currentHour <= 7) {
+                            alertType = 'unauthorized_access';
+                            alertMessage = '非开放时间有人进入';
+                        } else {
+                            alertType = 'forced_entry';
+                            alertMessage = '检测到强制开门';
+                        }
+                    } else {
+                        // 其他门禁
+                        alertType = 'intrusion';
+                        alertMessage = '非授权人员尝试进入';
+                    }
                     break;
             }
             
@@ -360,13 +509,33 @@ function updateDeviceStatus() {
             // 显示报警通知
             showNotification('报警', `${device.name}: ${alertMessage}`, 'danger');
         }
+        
         // 如果是环境传感器，更新环境数据
         if (device.type === 'sensor' && device.status !== 'offline') {
+            // 根据时间及季节模拟真实数据
+            const now = Date.now();
+            const isDaytime = currentHour >= 7 && currentHour <= 19;
+            
+            // 温度波动规律
+            const baseTemp = isDaytime ? 23 : 20;
+            const tempAmplitude = isDaytime ? 5 : 2;
+            
+            // 湿度波动规律
+            const baseHumidity = 50;
+            const humidityAmplitude = 15;
+            
+            // 模拟一天内的数据波动
+            const dayProgress = (currentHour / 24) * 2 * Math.PI;
+            
             device.data = {
-                temperature: 20 + 5 * Math.sin(Date.now() / 5000),
-                humidity: 50 + 10 * Math.cos(Date.now() / 7000),
-                pm25: 20 + Math.floor(Math.random() * 15),
-                noise: 40 + Math.floor(Math.random() * 20)
+                // 温度白天较高，夜间较低
+                temperature: parseFloat((baseTemp + tempAmplitude * Math.sin(dayProgress + now/10000)).toFixed(1)),
+                // 湿度早晚较高，中午较低
+                humidity: parseFloat((baseHumidity + humidityAmplitude * Math.cos(dayProgress + now/12000)).toFixed(1)),
+                // PM2.5随机波动
+                pm25: Math.floor(15 + Math.random() * 20),
+                // 噪音白天较高，夜间较低
+                noise: isDaytime ? Math.floor(50 + Math.random() * 15) : Math.floor(30 + Math.random() * 10)
             };
         }
     }

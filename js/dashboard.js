@@ -18,9 +18,16 @@ const envHistoryData = {
 
 // 模拟报警统计数据
 let alertStats = {
-    intrusion: 3,
-    fire: 1,
-    offline: 2
+    intrusion: 3,      // 入侵报警
+    fire: 1,           // 火灾报警
+    offline: 2,        // 设备离线
+    temperature: 2,    // 温度异常
+    humidity: 1,       // 湿度异常
+    air: 1,            // 空气质量异常
+    crowd: 2,          // 人员密度过高
+    motion: 1,         // 夜间异常活动
+    unauthorized_access: 1, // 非授权访问
+    forced_entry: 1    // 强制开门
 };
 
 /**
@@ -179,8 +186,8 @@ function initAlertChart() {
         legend: {
             orient: 'vertical',
             left: 10,
-            top: 'middle',
-            data: ['入侵报警', '火灾报警', '设备离线']
+            top: 'center',
+            data: ['入侵报警', '火灾报警', '设备离线', '温度异常', '湿度异常', '空气质量异常', '人员密度过高', '异常活动', '非授权访问']
         },
         series: [
             {
@@ -210,7 +217,13 @@ function initAlertChart() {
                 data: [
                     { value: alertStats.intrusion, name: '入侵报警', itemStyle: { color: '#e74c3c' } },
                     { value: alertStats.fire, name: '火灾报警', itemStyle: { color: '#ff9800' } },
-                    { value: alertStats.offline, name: '设备离线', itemStyle: { color: '#95a5a6' } }
+                    { value: alertStats.offline, name: '设备离线', itemStyle: { color: '#95a5a6' } },
+                    { value: alertStats.temperature, name: '温度异常', itemStyle: { color: '#f39c12' } },
+                    { value: alertStats.humidity, name: '湿度异常', itemStyle: { color: '#3498db' } },
+                    { value: alertStats.air, name: '空气质量异常', itemStyle: { color: '#27ae60' } },
+                    { value: alertStats.crowd, name: '人员密度过高', itemStyle: { color: '#8e44ad' } },
+                    { value: alertStats.motion + alertStats.unauthorized_access, name: '异常活动', itemStyle: { color: '#2c3e50' } },
+                    { value: alertStats.forced_entry, name: '非授权访问', itemStyle: { color: '#c0392b' } }
                 ]
             }
         ]
@@ -284,7 +297,13 @@ function updateAlertStats() {
                         data: [
                             { value: alertStats.intrusion, name: '入侵报警', itemStyle: { color: '#e74c3c' } },
                             { value: alertStats.fire, name: '火灾报警', itemStyle: { color: '#ff9800' } },
-                            { value: alertStats.offline, name: '设备离线', itemStyle: { color: '#95a5a6' } }
+                            { value: alertStats.offline, name: '设备离线', itemStyle: { color: '#95a5a6' } },
+                            { value: alertStats.temperature, name: '温度异常', itemStyle: { color: '#f39c12' } },
+                            { value: alertStats.humidity, name: '湿度异常', itemStyle: { color: '#3498db' } },
+                            { value: alertStats.air, name: '空气质量异常', itemStyle: { color: '#27ae60' } },
+                            { value: alertStats.crowd, name: '人员密度过高', itemStyle: { color: '#8e44ad' } },
+                            { value: alertStats.motion + alertStats.unauthorized_access, name: '异常活动', itemStyle: { color: '#2c3e50' } },
+                            { value: alertStats.forced_entry, name: '非授权访问', itemStyle: { color: '#c0392b' } }
                         ]
                     }
                 ]
@@ -304,8 +323,15 @@ function fetchAlertStats() {
             // 模拟服务器返回的数据
             const data = {
                 intrusion: Math.floor(Math.random() * 5) + 1,
-                fire: Math.floor(Math.random() * 3),
-                offline: Math.floor(Math.random() * 4) + 1
+                fire: Math.floor(Math.random() * 2),
+                offline: Math.floor(Math.random() * 4) + 1,
+                temperature: Math.floor(Math.random() * 3),
+                humidity: Math.floor(Math.random() * 2),
+                air: Math.floor(Math.random() * 2),
+                crowd: Math.floor(Math.random() * 3),
+                motion: Math.floor(Math.random() * 2),
+                unauthorized_access: Math.floor(Math.random() * 2),
+                forced_entry: Math.floor(Math.random() * 2)
             };
             
             resolve(data);
